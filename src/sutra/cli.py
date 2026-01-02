@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 
 from .core import (
     cmd_create,
@@ -17,14 +18,26 @@ def main() -> None:
     ap = argparse.ArgumentParser(prog="sutra")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
+    argv = sys.argv[1:]
+    if argv:
+        if argv[0] == "help":
+            argv[0] = "--help"
+        elif len(argv) >= 2 and argv[-1] == "help":
+            argv[-1] = "--help"
+
     c = sub.add_parser("create")
     c.add_argument("project_name")
     c.add_argument("description")
 
-    r = sub.add_parser("run")
+    r = sub.add_parser(
+        "run",
+        description="Execute a pipeline; use --text or the optional positional text_target alias.",
+        help="Run a pipeline (shorthand text may be given positionally instead of --text).",
+    )
     r.add_argument("pipeline_file")
     r.add_argument("--input", default=None, help="Path to JSON/JSONL file or inline JSON")
     r.add_argument("--text", default=None, help="Raw text payload (mutually exclusive with --input)")
+    r.add_argument("text_payload", nargs="?", default=None, help="Alias for --text (free text input)")
     r.add_argument("--reliable", action="store_true", help="Enable Reliable Input mode (requires NORMALIZER)")
     r.add_argument("--output", default=None, help="Optional output file path (JSONL)")
 
@@ -41,14 +54,15 @@ def main() -> None:
     u.add_argument("--port", type=int, default=None)
     u.add_argument("--reload", action="store_true")
 
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
     if args.cmd == "create":
         cmd_create(args.project_name, args.description)
     elif args.cmd == "run":
+        text_arg = args.text if args.text is not None else args.text_payload
         cmd_run(
             args.pipeline_file,
             args.input,
-            text=args.text,
+            text=text_arg,
             reliable=args.reliable,
             output=args.output,
         )

@@ -87,6 +87,9 @@ class Ollama:
             with urllib.request.urlopen(req, timeout=timeout or self.timeout) as r:
                 body = r.read().decode("utf-8")
         except urllib.error.HTTPError as e:
+            if e.code == 404:
+                hint = f"[Sutra] Model '{self.model}' not found. Install it via `ollama pull {self.model}`."
+                print(hint, file=sys.stderr)
             try:
                 body = e.read().decode("utf-8")
             except Exception:
@@ -290,115 +293,123 @@ def _run_pipeline_with_work_item(
     return pipe.run(state, trace=trace)
 
 def _render_agents_template(default_model: str) -> str:
-    return textwrap.dedent(f"""
-    from __future__ import annotations
+    template = textwrap.dedent(
+        '''
+        from __future__ import annotations
 
-    from sutra import Agent
+        from sutra import Agent
 
-    DEFAULT_MODEL = "{default_model}"
-    MODEL_HINT = (
-        "Sutra expects the local Ollama model '{default_model}'. "
-        f"Install it with `ollama pull {default_model}` if it is missing."
+        DEFAULT_MODEL = "{default_model}"
+        MODEL_HINT = (
+            "Sutra expects the local Ollama model '{default_model}'. "
+            "Install it with `ollama pull {default_model}` if it is missing."
+        )
+
+        classification_agent = Agent(
+            name="classification",
+            objective="Classify support tickets by category and urgency.",
+            model=DEFAULT_MODEL,
+            prompt=f"""
+        {MODEL_HINT}
+        Ticket text: {{text}}
+
+        Return a JSON object with keys "category" and "urgency" (high/medium/low).
+        Example: {{"category": "bug", "urgency": "high"}}
+        """,
+            expects_json=True,
+            required_keys=["category", "urgency"],
+            output_key="classification",
+            retries=2,
+            temperature=0.1,
+        )
+
+        replier_agent = Agent(
+            name="replier",
+            objective="Draft a friendly support reply referencing classification insights.",
+            model=DEFAULT_MODEL,
+            prompt=f"""
+        {MODEL_HINT}
+        Ticket: {{text}}
+        Classification: {{classification}}
+
+        Return JSON with "reply" (friendly response) and "tone" (e.g., calm/empathetic).
+        Example: {{"reply": "Thanks...", "tone": "empathetic"}}
+        """,
+            expects_json=True,
+            required_keys=["reply", "tone"],
+            output_key="replier",
+            temperature=0.1,
+        )
+
+        summary_agent = Agent(
+            name="summarizer",
+            objective="Summarize the ticket, classification, and reply for reporting.",
+            model=DEFAULT_MODEL,
+            prompt=f"""
+        {MODEL_HINT}
+        Ticket: {{text}}
+        Classification: {{classification}}
+        Reply: {{replier}}
+
+        Return JSON with "summary", "next_steps", and "status" keys.
+        """,
+            expects_json=True,
+            required_keys=["summary", "next_steps", "status"],
+            output_key="summary",
+            temperature=0.0,
+        )
+
+        __all__ = [
+            "classification_agent",
+            "replier_agent",
+            "summary_agent",
+            "DEFAULT_MODEL",
+            "MODEL_HINT",
+        ]
+        '''
     )
-
-    classification_agent = Agent(
-        name="classification",
-        objective="Classify support tickets by category and urgency.",
-        model=DEFAULT_MODEL,
-        prompt=f"""
-{MODEL_HINT}
-Ticket text: {{text}}
-
-Return a JSON object with keys \"category\" and \"urgency\" (high/medium/low).\nExample: {{\"category\": \"bug\", \"urgency\": \"high\"}}
-""",
-        expects_json=True,
-        required_keys=["category", "urgency"],
-        output_key="classification",
-        retries=2,
-        temperature=0.1,
-    )
-
-    replier_agent = Agent(
-        name="replier",
-        objective="Draft a friendly support reply referencing classification insights.",
-        model=DEFAULT_MODEL,
-        prompt=f"""
-{MODEL_HINT}
-Ticket: {{text}}
-Classification: {{classification}}
-
-Return JSON with \"reply\" (friendly response) and \"tone\" (e.g., calm/empathetic).\nExample: {{\"reply\": \"Thanks...\", \"tone\": \"empathetic\"}}
-""",
-        expects_json=True,
-        required_keys=["reply", "tone"],
-        output_key="replier",
-        temperature=0.1,
-    )
-
-    summary_agent = Agent(
-        name="summarizer",
-        objective="Summarize the ticket, classification, and reply for reporting.",
-        model=DEFAULT_MODEL,
-        prompt=f"""
-{MODEL_HINT}
-Ticket: {{text}}
-Classification: {{classification}}
-Reply: {{replier}}
-
-Return JSON with \"summary\", \"next_steps\", and \"status\" keys.
-""",
-        expects_json=True,
-        required_keys=["summary", "next_steps", "status"],
-        output_key="summary",
-        temperature=0.0,
-    )
-
-    __all__ = [
-        "classification_agent",
-        "replier_agent",
-        "summary_agent",
-        "DEFAULT_MODEL",
-        "MODEL_HINT",
-    ]
-    """
+    return template.format(default_model=default_model)
 
 def _render_pipeline_template(project_name: str) -> str:
-    return textwrap.dedent(f"""
-    # Auto-generated Sutra pipeline for project '{project_name}'.
-    # Use `sutra run pipeline.py --text '<your text>'` or `python pipeline.py`.
+    template = textwrap.dedent(
+        '''
+        # Auto-generated Sutra pipeline for project '{project_name}'.
+        # Use `sutra run pipeline.py --text '<your text>'` or `python pipeline.py`.
 
-    from __future__ import annotations
+        from __future__ import annotations
 
-    import json
+        import json
 
-    from sutra import Pipeline, Step
+        from sutra import Pipeline, Step
 
-    import agents
+        import agents
 
-    DEFAULT_INPUT = {{
-        "id": "ticket-1001",
-        "type": "support_ticket",
-        "text": "Customer reports their dashboard throws a 403 after login; needs help urgently.",
-        "fields": {{"channel": "email", "customer": "Acme Corp", "priority_hint": "high"}},
-        "attachments": [],
-        "meta": {{"source": "sutra create"}},
-    }}
-
-
-    def build() -> Pipeline:
-        steps = [
-            Step(agents.classification_agent, takes=["text"]),
-            Step(agents.replier_agent, takes=["text", "classification"]),
-            Step(agents.summary_agent, takes=["text", "classification", "replier"]),
-        ]
-        return Pipeline(steps)
+        DEFAULT_INPUT = {{
+            "id": "ticket-1001",
+            "type": "support_ticket",
+            "text": "Customer reports their dashboard throws a 403 after login; needs help urgently.",
+            "fields": {{"channel": "email", "customer": "Acme Corp", "priority_hint": "high"}},
+            "attachments": [],
+            "meta": {{"source": "sutra create"}},
+        }}
 
 
-    if __name__ == "__main__":
-        pipeline = build()
-        result = pipeline.run(DEFAULT_INPUT)
-        print(json.dumps(result, ensure_ascii=False, indent=2))
-    """
+        def build() -> Pipeline:
+            steps = [
+                Step(agents.classification_agent, takes=["text"]),
+                Step(agents.replier_agent, takes=["text", "classification"]),
+                Step(agents.summary_agent, takes=["text", "classification", "replier"]),
+            ]
+            return Pipeline(steps)
+
+
+        if __name__ == "__main__":
+            pipeline = build()
+            result = pipeline.run(DEFAULT_INPUT)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+        '''
+    )
+    return template.format(project_name=project_name)
 
 def _create_sample_project(project_dir: Path, project_name: str) -> None:
     default_model = CONFIG.get("default_model", DEFAULT_CONFIG["default_model"])
@@ -456,6 +467,14 @@ def cmd_run(
     pipeline_path = Path(filename).resolve()
     project_dir = pipeline_path.parent  # e.g., projects/QuizMaster
 
+    if not pipeline_path.exists():
+        hint = (
+            f"[Sutra] Pipeline file not found: {pipeline_path}\n"
+            f"[Sutra] Tip: run `sutra create demo \"<description>\"` or verify that the path under projects/ exists."
+        )
+        print(hint, file=sys.stderr)
+        sys.exit(2)
+
     if input_arg and text:
         raise ValueError("--text and --input cannot be used together.")
 
@@ -467,6 +486,16 @@ def cmd_run(
     spec = importlib.util.spec_from_file_location("pipeline", str(pipeline_path))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
+
+    if not (hasattr(mod, "build") and callable(getattr(mod, "build"))):
+        pipeline_candidate = pipeline_path.parent / "pipeline.py"
+        suggestion = pipeline_candidate if pipeline_candidate.exists() else pipeline_path
+        print(
+            f"[Sutra] This file does not define build(). "
+            f"Did you mean to run {suggestion}?",
+            file=sys.stderr,
+        )
+        sys.exit(2)
 
     pipe = mod.build()
     default_payload = getattr(mod, "DEFAULT_INPUT", {"text": ""})

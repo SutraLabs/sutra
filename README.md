@@ -21,20 +21,34 @@ git clone https://github.com/yourusername/sutra
 cd sutra
 
 # Install dependencies
-pip install -r requirements.txt
+- `pip install -r requirements.txt` (developer quickstart; installs sutra-ai with UI/PDF/RAG extras plus `pytest`)
+- `pip install -e .` (editable install for ongoing work; exposes the `sutra` CLI)
+- `pip install "sutra-ai[ui,pdf,rag]"` to grab the extras from PyPI if you don’t need the editable install
 
-# Optional: install from PyPI with the UI, PDF, and RAG extras
-pip install "sutra-ai[ui,pdf,rag]"
+If `ollama list` shows no models, install the configured default (`llama3.1:latest` by default) with `ollama pull <model>`. `sutra create` and the README warnings explain that the CLI falls back to that model and you can rerun once a model is available.
 
-If `ollama list` shows no models, install the configured default model (check `.sutra/config.json` – default=`llama3.1:latest`) with `ollama pull <model>`. `sutra create` warns and falls back to that default when Ollama can’t report any models, so you can rerun creation once the model exists.
-
-Before running `sutra create`, verify `ollama list` (or `curl http://localhost:11434/api/tags`). The CLI will remind you the default model is being used when no Ollama models are available.
+Before running `sutra create`, verify `ollama list` (or `curl http://localhost:11434/api/tags`). The CLI reminds you when the default model is being used because Ollama could not report any models.
 
 # Run a sample pipeline (no Ollama required)
 python3 sutra.py test examples/echo_pipeline.py
 
 Or run with explicit input:
 python3 sutra.py run examples/echo_pipeline.py --input '{"text":"Ticket #12847: App crashes on photo upload after update 2.3.1"}'
+
+When running your own pipelines use:
+```
+sutra create demo "Support triage assistant"
+sutra run projects/demo/pipeline.py --text "My support request"
+sutra run projects/demo/pipeline.py "My support request"  # shorthand positional alias
+```
+
+**Install + CLI smoke**
+
+- Run `pip install -e .` from the repo root to install the package and expose the `sutra` CLI (optionally combine with the above dependency installs).
+- Confirm the CLI is wired: `sutra --help`.
+- Scaffold a demo project: `sutra create demo "Support triage assistant"`.
+- Run it: `sutra run projects/demo/pipeline.py --text "Need login access reset"`.
+- Check the outputs under `.sutra/runs/<latest>/` and `.sutra/outputs/<latest>.jsonl`.
 
 **How to run a pipeline**
 

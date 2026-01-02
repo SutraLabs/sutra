@@ -1,0 +1,29 @@
+{
+  "work_item": {
+    "id": null,
+    "type": null,
+    "text": "Hello world",
+    "fields": {},
+    "attachments": [],
+    "meta": {
+      "raw": {
+        "text": "Hello world"
+      }
+    }
+  },
+  "input": {
+    "id": null,
+    "type": null,
+    "text": "Hello world",
+    "fields": {},
+    "attachments": [],
+    "meta": {
+      "raw": {
+        "text": "Hello world"
+      }
+    }
+  },
+  "text": "Hello world",
+  "fields": {},
+  "attachments": []
+}
