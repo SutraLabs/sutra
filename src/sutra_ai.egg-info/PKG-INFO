@@ -1,9 +1,9 @@
 Metadata-Version: 2.4
 Name: sutra-ai
-Version: 0.1.1
+Version: 0.1.2
 Summary: Local-first execution runtime for deterministic LLM workflows with Ollama.
 Author: Rajat Pandey
-License: MIT
+License-Expression: MIT
 Project-URL: Homepage, https://github.com/rajat4493/SutraFramework
 Project-URL: Repository, https://github.com/rajat4493/SutraFramework
 Project-URL: Issues, https://github.com/rajat4493/SutraFramework/issues
@@ -12,7 +12,6 @@ Keywords: pipeline,cli,ollama
 Classifier: Development Status :: 3 - Alpha
 Classifier: Intended Audience :: Developers
 Classifier: Topic :: Software Development :: Libraries
-Classifier: License :: OSI Approved :: MIT License
 Classifier: Programming Language :: Python :: 3 :: Only
 Classifier: Programming Language :: Python :: 3.10
 Classifier: Programming Language :: Python :: 3.11
