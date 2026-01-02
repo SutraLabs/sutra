@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: sutra-ai
-Version: 0.1.0
+Version: 0.1.1
 Summary: Local-first execution runtime for deterministic LLM workflows with Ollama.
 Author: Rajat Pandey
 License: MIT
