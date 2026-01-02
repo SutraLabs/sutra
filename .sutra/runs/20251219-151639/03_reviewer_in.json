@@ -1,0 +1,12 @@
+{
+  "text": "Customer: Jane Doe, VIP bettor, deposits £5k/mo",
+  "informer": [
+    {
+      "full_name": "Jane Doe",
+      "residence": "",
+      "citizenships": [],
+      "monthly_deposits_gbp": "5000",
+      "risk_flags": []
+    }
+  ]
+}

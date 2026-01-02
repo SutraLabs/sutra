@@ -1,3 +1,26 @@
+Metadata-Version: 2.4
+Name: sutra-ai
+Version: 0.1.0
+Summary: Local-first execution runtime for deterministic LLM workflows (Ollama).
+Author: Rajat Pandey
+License: MIT
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: requests>=2.31.0
+Provides-Extra: ui
+Requires-Dist: fastapi>=0.110; extra == "ui"
+Requires-Dist: uvicorn>=0.29; extra == "ui"
+Requires-Dist: jinja2>=3.1; extra == "ui"
+Provides-Extra: pdf
+Requires-Dist: pypdf>=4.0.0; extra == "pdf"
+Provides-Extra: rag
+Requires-Dist: numpy>=1.26; extra == "rag"
+Requires-Dist: sentence-transformers>=2.2.2; extra == "rag"
+Requires-Dist: reportlab>=4.0.0; extra == "rag"
+Requires-Dist: pypdf>=4.0.0; extra == "rag"
+Dynamic: license-file
+
 **SutraAI** 
 Local-first agent workflow framework for hackable, reliable multi-agent pipelines.
 
@@ -26,26 +49,11 @@ pip install -r requirements.txt
 # Optional: install from PyPI with the UI, PDF, and RAG extras
 pip install "sutra-ai[ui,pdf,rag]"
 
-If `ollama list` shows no models, install the configured default model (check `.sutra/config.json` – default=`llama3.1:latest`) with `ollama pull <model>`. `sutra create` warns and falls back to that default when Ollama can’t report any models, so you can rerun creation once the model exists.
-
-Before running `sutra create`, verify `ollama list` (or `curl http://localhost:11434/api/tags`). The CLI will remind you the default model is being used when no Ollama models are available.
-
 # Run a sample pipeline (no Ollama required)
 python3 sutra.py test examples/echo_pipeline.py
 
 Or run with explicit input:
 python3 sutra.py run examples/echo_pipeline.py --input '{"text":"Ticket #12847: App crashes on photo upload after update 2.3.1"}'
-
-**How to run a pipeline**
-
-- Each pipeline should expose a `build()` function and optionally `DEFAULT_INPUT` so `sutra test <pipeline>` works without extra arguments.
-- To run with custom text, pass `--text`:  
-  `sutra run projects/testchat_v1/testchat_v1_pipeline.py --text "What is Agentic AI?"`
-- To source structured work items, point `--input` at a JSON/JSONL file (`--input work.jsonl`).
-- For larger batches use `--output <path>` so results write to your own JSONL and you can inspect `.sutra/runs/<run_id>/` for traces.
-- Add `--reliable` when your pipeline exports `NORMALIZER` or `NORMALIZER_STEP` so Sutra preprocesses inputs before agents run.
-
-If a project has additional helpers (tools, attachments, metadata), include those fields in `DEFAULT_INPUT` and mention them in the pipeline docstring so fellow contributors know how to grade the inputs.
 
 **Example Output (from `examples/echo_pipeline.py`):**
 {

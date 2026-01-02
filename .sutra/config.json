@@ -1,0 +1,9 @@
+{
+  "ollama_host": "http://localhost:11434",
+  "default_model": "llama3.1:latest",
+  "runs_dir": ".sutra/runs",
+  "outputs_dir": ".sutra/outputs",
+  "request_timeout": 120,
+  "ui_host": "127.0.0.1",
+  "ui_port": 8005
+}

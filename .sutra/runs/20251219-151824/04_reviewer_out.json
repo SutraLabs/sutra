@@ -1,0 +1,26 @@
+{
+  "text": "test input",
+  "informer": [
+    {
+      "full_name": "",
+      "residence": "",
+      "citizenships": [],
+      "monthly_deposits_gbp": "",
+      "risk_flags": []
+    }
+  ],
+  "reviewer": [
+    {
+      "verdict": "manual_review",
+      "summary": "The applicant details and case text are missing, making it impossible to assess affordability, source-of-funds risk, citizenship constraints, or AML red flags. Additional information is required to proceed with the review.",
+      "breach_rules": [],
+      "recommended_actions": [
+        "Request full name of the applicant",
+        "Request current residence address",
+        "Request list of citizenships",
+        "Request proof of monthly deposits in GBP for the last 3 months",
+        "Request the original case text for review"
+      ]
+    }
+  ]
+}

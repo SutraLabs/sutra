@@ -1,2 +1,3 @@
-# Minimal developer requirements for SutraFramework
+# Quickstart developer dependencies
+-e .[ui,pdf,rag]
 pytest>=7.0

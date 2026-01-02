@@ -1,0 +1,24 @@
+{
+  "text": "test input",
+  "informer": [
+    {
+      "full_name": "",
+      "residence": "",
+      "citizenships": [],
+      "monthly_deposits_gbp": "",
+      "risk_flags": []
+    }
+  ],
+  "reviewer": [
+    {
+      "verdict": "manual_review",
+      "summary": "The application lacks critical information including full name, residence, citizenship details, and monthly deposits in GBP. Without this data, affordability and source-of-funds risk cannot be assessed, and citizenship constraints cannot be verified. However, there are no clear red flags indicating immediate disqualification.",
+      "breach_rules": [],
+      "recommended_actions": [
+        "Request full name and residential address",
+        "Request proof of citizenship for all listed nationalities",
+        "Request bank statements for the last 3 months to verify monthly deposits in GBP"
+      ]
+    }
+  ]
+}

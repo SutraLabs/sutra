@@ -1,0 +1,12 @@
+{
+  "text": "test input",
+  "informer": [
+    {
+      "full_name": "",
+      "residence": "",
+      "citizenships": [],
+      "monthly_deposits_gbp": "",
+      "risk_flags": []
+    }
+  ]
+}

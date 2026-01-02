@@ -1,0 +1,29 @@
+{
+  "work_item": {
+    "id": null,
+    "type": null,
+    "text": "{\n  \"text\": \"KYC submission for: Priya Sharma\\nDOB: 1990-06-14\\nNationality: UK\\nID Provided: Passport #507233847, issue date 2021-05-03, expiry 2031-05-02.\\nAddress: 18 Waverley Road, London SW17 0NL. Lived there since March 2020.\\nProof of address: Thames Utilities bill dated 2024-08-12 showing same address.\\nIncome source: software consultant, annual salary £95,000, HSBC account 40-33-21 / 21887765.\\nSanctions / PEP screening: no matches.\\nRisk declaration: standard / low risk.\"\n}",
+    "fields": {},
+    "attachments": [],
+    "meta": {
+      "raw": {
+        "text": "{\n  \"text\": \"KYC submission for: Priya Sharma\\nDOB: 1990-06-14\\nNationality: UK\\nID Provided: Passport #507233847, issue date 2021-05-03, expiry 2031-05-02.\\nAddress: 18 Waverley Road, London SW17 0NL. Lived there since March 2020.\\nProof of address: Thames Utilities bill dated 2024-08-12 showing same address.\\nIncome source: software consultant, annual salary £95,000, HSBC account 40-33-21 / 21887765.\\nSanctions / PEP screening: no matches.\\nRisk declaration: standard / low risk.\"\n}"
+      }
+    }
+  },
+  "input": {
+    "id": null,
+    "type": null,
+    "text": "{\n  \"text\": \"KYC submission for: Priya Sharma\\nDOB: 1990-06-14\\nNationality: UK\\nID Provided: Passport #507233847, issue date 2021-05-03, expiry 2031-05-02.\\nAddress: 18 Waverley Road, London SW17 0NL. Lived there since March 2020.\\nProof of address: Thames Utilities bill dated 2024-08-12 showing same address.\\nIncome source: software consultant, annual salary £95,000, HSBC account 40-33-21 / 21887765.\\nSanctions / PEP screening: no matches.\\nRisk declaration: standard / low risk.\"\n}",
+    "fields": {},
+    "attachments": [],
+    "meta": {
+      "raw": {
+        "text": "{\n  \"text\": \"KYC submission for: Priya Sharma\\nDOB: 1990-06-14\\nNationality: UK\\nID Provided: Passport #507233847, issue date 2021-05-03, expiry 2031-05-02.\\nAddress: 18 Waverley Road, London SW17 0NL. Lived there since March 2020.\\nProof of address: Thames Utilities bill dated 2024-08-12 showing same address.\\nIncome source: software consultant, annual salary £95,000, HSBC account 40-33-21 / 21887765.\\nSanctions / PEP screening: no matches.\\nRisk declaration: standard / low risk.\"\n}"
+      }
+    }
+  },
+  "text": "{\n  \"text\": \"KYC submission for: Priya Sharma\\nDOB: 1990-06-14\\nNationality: UK\\nID Provided: Passport #507233847, issue date 2021-05-03, expiry 2031-05-02.\\nAddress: 18 Waverley Road, London SW17 0NL. Lived there since March 2020.\\nProof of address: Thames Utilities bill dated 2024-08-12 showing same address.\\nIncome source: software consultant, annual salary £95,000, HSBC account 40-33-21 / 21887765.\\nSanctions / PEP screening: no matches.\\nRisk declaration: standard / low risk.\"\n}",
+  "fields": {},
+  "attachments": []
+}

@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sutra-ai"
+version = "0.1.0"
+description = "Local-first execution runtime for deterministic LLM workflows (Ollama)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Rajat Pandey" }]
+dependencies = [
+  "requests>=2.31.0",
+]
+
+[project.scripts]
+sutra = "sutra.cli:main"
+
+[project.optional-dependencies]
+ui = [
+  "fastapi>=0.110",
+  "uvicorn>=0.29",
+  "jinja2>=3.1",
+]
+pdf = [
+  "pypdf>=4.0.0",
+]
+rag = [
+  "numpy>=1.26",
+  "sentence-transformers>=2.2.2",
+  "reportlab>=4.0.0",
+  "pypdf>=4.0.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+sutra = ["ui/templates/*.html"]

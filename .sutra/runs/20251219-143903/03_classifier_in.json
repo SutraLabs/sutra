@@ -1,0 +1,7 @@
+{
+  "text": "",
+  "analyzer": {
+    "error": "exception",
+    "message": "Ollama HTTP error 404: {\"error\":\"model 'mistral:latest' not found\"}"
+  }
+}
