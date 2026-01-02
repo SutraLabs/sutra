@@ -1,7 +1,0 @@
-{
-  "text": "ast and Flexible Multi-Agent Automation Framework",
-  "summarizer": {
-    "error": "exception",
-    "message": "[summarizer] Missing var: 'analyzer'"
-  }
-}

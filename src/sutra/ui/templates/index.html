@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Sutra Command Center</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #05060a;
+      --card: #11131c;
+      --card-highlight: #1c2133;
+      --accent: #7f5bff;
+      --accent-2: #00f0ff;
+      --text: #f4f6ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top, #11172b, var(--bg));
+      min-height: 100vh;
+      padding: 2rem 3vw 4rem;
+    }
+    h1 { font-size: 2.4rem; margin-bottom: 0.3rem; }
+    h2 { margin-top: 0; }
+    p.lead { color: #c7d3ff; margin-top: 0; }
+    .grid {
+      display: grid;
+      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+    .card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px;
+      padding: 1.5rem;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 20px 30px rgba(0,0,0,0.35);
+      position: relative;
+      overflow: hidden;
+    }
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 1px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.04);
+      pointer-events: none;
+    }
+    label { display: block; font-size: 0.9rem; margin-bottom: 0.4rem; color: #bac4ff; }
+    select, textarea, input {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 0.6rem 0.8rem;
+      color: var(--text);
+      font-size: 0.95rem;
+      transition: border 0.2s ease, background 0.2s ease;
+    }
+    select:focus, textarea:focus, input:focus { border-color: var(--accent); outline: none; background: rgba(0,0,0,0.25); }
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 0.65rem 1.3rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: #05060a;
+      background: linear-gradient(120deg, var(--accent), var(--accent-2));
+      box-shadow: 0 8px 20px rgba(0, 240, 255, 0.25);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      margin-top: 0.8rem;
+    }
+    button:hover { transform: translateY(-2px); box-shadow: 0 12px 25px rgba(127,91,255,0.35); }
+    pre {
+      background: #07080f;
+      padding: 1rem;
+      border-radius: 12px;
+      max-height: 300px;
+      overflow: auto;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      padding: 0.2rem 0.8rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #8affc1;
+    }
+    .status-pill.error { color: #ff9c9c; }
+    ul.run-list { list-style: none; padding: 0; margin: 0; max-height: 400px; overflow-y: auto; }
+    ul.run-list li {
+      margin-bottom: 0.6rem;
+      background: rgba(255,255,255,0.03);
+      border-radius: 12px;
+      padding: 0.8rem 1rem;
+      border: 1px solid transparent;
+      transition: border 0.2s ease, transform 0.2s ease;
+      cursor: pointer;
+    }
+    ul.run-list li:hover { border-color: rgba(127,91,255,0.4); transform: translateX(4px); }
+    .run-meta { font-size: 0.85rem; color: #a7b2d6; margin-top: 0.2rem; }
+    #run-viewer { min-height: 200px; }
+    .file-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      overflow: hidden;
+    }
+    .file-card summary {
+      padding: 0.8rem 1rem;
+      cursor: pointer;
+      font-weight: 600;
+      background: rgba(255,255,255,0.02);
+    }
+    .file-card pre { margin: 0; border-radius: 0; border: none; }
+    .error { color: #ff9c9c; margin-top: 0.6rem; }
+    .success { color: #8affc1; margin-top: 0.6rem; }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(5,6,10,0.85);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      font-size: 1.1rem;
+      z-index: 1000;
+      color: var(--text);
+      backdrop-filter: blur(6px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .overlay.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .spinner {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 5px solid rgba(255,255,255,0.1);
+      border-top-color: var(--accent);
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="overlay" id="loading-overlay">
+    <div class="spinner"></div>
+    <div>Running pipeline…</div>
+  </div>
+  <header>
+    <h1>🎛️ Sutra Command Center</h1>
+    <p class="lead">Launch agents, inspect traces, and tweak prompts without leaving your browser.</p>
+  </header>
+
+  <div class="grid">
+    <section class="card">
+      <h2>Pipeline Launcher</h2>
+      <form method="post" action="/run">
+        <label for="pipeline">Pipeline file</label>
+        <select id="pipeline" name="pipeline_file">
+          {% for pipe in pipelines %}
+          <option value="{{ pipe.path }}">{{ pipe.path }}</option>
+          {% endfor %}
+        </select>
+        <label for="input_json">Input JSON</label>
+        <textarea id="input_json" name="input_json" rows="5" placeholder='{"text":"Describe your task"}'>{"text": ""}</textarea>
+        <button type="submit">Execute Pipeline</button>
+      </form>
+      {% if run_error %}
+      <div class="status-pill error">⚠️ Failed</div>
+      <p class="error">{{ run_error }}</p>
+      {% elif run_output %}
+      <div class="status-pill">✅ Success</div>
+      <pre>{{ run_output }}</pre>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <h2>Recent Traces</h2>
+      {% if runs %}
+      <ul class="run-list">
+        {% for r in runs %}
+        <li onclick="loadRun('{{ r }}')">
+          <strong>{{ r }}</strong>
+          <div class="run-meta">Click to preview trace</div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p>No runs yet. Execute a pipeline to start logging.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <div class="grid" style="margin-top:1.5rem;">
+    <section class="card" style="grid-column: span 2;">
+      <h2>Trace Explorer</h2>
+      <div id="run-viewer">
+        <p>Select a run from the list to inspect step inputs/outputs.</p>
+      </div>
+    </section>
+  </div>
+
+  <section class="card" style="margin-top:1.5rem;">
+    <h2>Prompt Workbench</h2>
+    <form method="get" action="/edit" style="margin-bottom:1rem;">
+      <label for="path">File path</label>
+      <input id="path" type="text" name="path" placeholder="projects/dogfood/dogfood_informer.py" value="{{ edit_path or '' }}">
+      <button type="submit">Load prompt</button>
+    </form>
+    {% if edit_path %}
+    <form method="post" action="/edit">
+      <input type="hidden" name="path" value="{{ edit_path }}">
+      <label for="content">Editing {{ edit_path }}</label>
+      <textarea id="content" name="content" rows="16">{{ edit_content }}</textarea>
+      <button type="submit">Save changes</button>
+    </form>
+    {% else %}
+    <p>Load any agent file to iterate on prompts with instant save.</p>
+    {% endif %}
+  </section>
+
+  <script>
+    const pipelineTemplates = {{ pipeline_templates | safe }};
+    async function loadRun(id) {
+      const viewer = document.getElementById('run-viewer');
+      viewer.innerHTML = `<p>Loading ${id}...</p>`;
+      try {
+        const resp = await fetch(`/api/runs/${id}`);
+        if (!resp.ok) throw new Error('Failed to load run');
+        const data = await resp.json();
+        if (!data.files.length) {
+          viewer.innerHTML = `<p>No files for run ${id}</p>`;
+          return;
+        }
+        viewer.innerHTML = data.files.map(file => `
+          <details class="file-card">
+            <summary>${file.name}</summary>
+            <pre>${escapeHtml(file.raw)}</pre>
+          </details>
+        `).join('');
+      } catch (err) {
+        viewer.innerHTML = `<p class="error">${err}</p>`;
+      }
+    }
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, function(m) {
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]);
+      });
+    }
+    (function attachTemplateBehavior() {
+      const select = document.getElementById('pipeline');
+      const inputArea = document.getElementById('input_json');
+      function applyTemplate() {
+        const tpl = pipelineTemplates[select.value];
+        if (tpl !== undefined) {
+          inputArea.value = typeof tpl === 'string'
+            ? tpl
+            : JSON.stringify(tpl, null, 2);
+        }
+      }
+      if (select && inputArea) {
+        select.addEventListener('change', applyTemplate);
+        applyTemplate();
+      }
+    })();
+    (function attachLoadingOverlay() {
+      const form = document.querySelector('form[action="/run"]');
+      const overlay = document.getElementById('loading-overlay');
+      if (!form || !overlay) return;
+      form.addEventListener('submit', () => {
+        overlay.classList.add('show');
+      });
+      window.addEventListener('pageshow', () => overlay.classList.remove('show'));
+    })();
+  </script>
+</body>
+</html>

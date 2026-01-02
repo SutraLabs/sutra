@@ -1,0 +1,4 @@
+{
+  "text": "The payment page shows a 500 error when submitting invoices.",
+  "fields": {"channel": "web", "customer": "BetaCorp"}
+}

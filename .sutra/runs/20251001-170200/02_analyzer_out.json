@@ -1,8 +1,0 @@
-{
-  "ticket_id": "T-12847",
-  "text": "Customer reports the iOS app crashes when uploading photos after update 2.3.1 on iPhone 12 (iOS 16.4). Multiple app store reviews mention same issue.",
-  "analyzer": {
-    "error": "invalid_json",
-    "raw": "{\n\"incident\": {\n\"type\": \"crash\",\n\"severity\": \"medium\",\n\"description\": \"iOS app crashes when uploading photos after update 2.3.1 on iPhone 12 (iOS 16.4)\",\n\"impacted_users\": 2,\n\"user_feedback\": [\n{\n\"rating\": 2,\n\"text\": \"Crashes every time I try to upload a photo.\"\n},\n{\n\"rating\": 3,\n\"text\": \"This update broke the app for me. Can't even use it anymore.\"\n}\n],\n\"reproducibility\": {\n\"reproduction_instructions\": \"Try uploading a photo after updating to version 2.3.1 on iPhone 12 (iOS 16.4).\",\n\"reproduction_result\": \"Crashes every time\"\n}\n},\n\"request\": {\n\"type\": \"fix\",\n\"severity\": \"medium\",\n\"description\": \"Fix the app crashing issue after updating to version 2.3.1 on iPhone 12 (iOS 16.4)\",\n\"impacted_users\": 2,\n\"user_feedback\": [\n{\n\"rating\": 2,\n\"text\": \"Please fix this asap.\"\n},\n{\n\"rating\": 3,\n\"text\": \"This is unacceptable.\"\n}\n],\n\"reproducibility\": {\n\"reproduction_instructions\": \"Try uploading a photo after updating to version 2.3.1 on iPhone 12 (iOS 16.4).\",\n\"reproduction_result\": \"Crashes every time\"\n}\n}\n}"
-  }
-}

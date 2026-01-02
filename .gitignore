@@ -1,0 +1,11 @@
+.venv/
+dist/
+.sutra/
+__pycache__/
+*.pyc
+*.egg-info/
+.DS_Store
+.pytest_cache/
+projects/
+*.pdf
+*.docx

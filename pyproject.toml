@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sutra-ai"
+version = "0.1.0"
+description = "Local-first execution runtime for deterministic LLM workflows with Ollama."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Rajat Pandey" }]
+dependencies = [
+  "requests>=2.31.0",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Libraries",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+keywords = ["pipeline", "cli", "ollama"]
+
+[project.urls]
+Homepage = "https://github.com/rajat4493/SutraFramework"
+Repository = "https://github.com/rajat4493/SutraFramework"
+Issues = "https://github.com/rajat4493/SutraFramework/issues"
+Changelog = "https://github.com/rajat4493/SutraFramework/blob/main/CHANGELOG.md"
+
+[project.scripts]
+sutra = "sutra.cli:main"
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.0",
+]
+ui = [
+  "fastapi>=0.110",
+  "uvicorn>=0.29",
+  "jinja2>=3.1",
+]
+pdf = [
+  "pypdf>=4.0.0",
+]
+rag = [
+  "numpy>=1.26",
+  "sentence-transformers>=2.2.2",
+  "reportlab>=4.0.0",
+  "pypdf>=4.0.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+sutra = ["ui/templates/*.html"]
