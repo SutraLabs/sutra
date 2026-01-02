@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 # sutra core — Local-first agent workflows
-import importlib.util, json, pathlib, sys, time, types, urllib.request, urllib.error, subprocess
+import importlib.util, json, pathlib, sys, time, types, urllib.request, urllib.error, subprocess, textwrap
 from pathlib import Path
 from typing import Any, Iterable, List, Optional, Tuple
 
@@ -289,123 +289,121 @@ def _run_pipeline_with_work_item(
         state = normalizer_step(state)
     return pipe.run(state, trace=trace)
 
-# ---------- INTERACTIVE GENERATOR ----------
-def create_generic_agent(project_name: str, agent_name: str, agent_purpose: str, model: str) -> str:
-    """Generate a generic agent file"""
-    return f"""# {project_name}_{agent_name}.py
-from sutra import Agent
+def _render_agents_template(default_model: str) -> str:
+    return textwrap.dedent(f"""
+    from __future__ import annotations
 
-{agent_name} = Agent(
-    name='{agent_name}',
-    objective='{agent_purpose}',
-    model='{model}',
-    prompt='''{agent_purpose}
+    from sutra import Agent
 
-Input: {{text}}
+    DEFAULT_MODEL = "{default_model}"
+    MODEL_HINT = (
+        "Sutra expects the local Ollama model '{default_model}'. "
+        f"Install it with `ollama pull {default_model}` if it is missing."
+    )
 
-Process the input and return structured JSON.
-Be specific and clear in your output.
+    classification_agent = Agent(
+        name="classification",
+        objective="Classify support tickets by category and urgency.",
+        model=DEFAULT_MODEL,
+        prompt=f"""
+{MODEL_HINT}
+Ticket text: {{text}}
 
-Return only valid JSON.''',
-    expects_json=True,
-    output_key='{agent_name}',
-    required_keys=[],
-    retries=1,
-    temperature=0.1
-)"""
+Return a JSON object with keys \"category\" and \"urgency\" (high/medium/low).\nExample: {{\"category\": \"bug\", \"urgency\": \"high\"}}
+""",
+        expects_json=True,
+        required_keys=["category", "urgency"],
+        output_key="classification",
+        retries=2,
+        temperature=0.1,
+    )
 
-def interactive_agent_config(project_name: str) -> list:
-    """Get agent configuration from user"""
-    print("\nConfigure your agents:")
+    replier_agent = Agent(
+        name="replier",
+        objective="Draft a friendly support reply referencing classification insights.",
+        model=DEFAULT_MODEL,
+        prompt=f"""
+{MODEL_HINT}
+Ticket: {{text}}
+Classification: {{classification}}
 
-    while True:
-        try:
-            num = int(input("How many agents? (1-5): "))
-            if 1 <= num <= 5:
-                break
-        except:  # pragma: no cover - interactive helper
-            pass
-        print("Enter 1-5")
+Return JSON with \"reply\" (friendly response) and \"tone\" (e.g., calm/empathetic).\nExample: {{\"reply\": \"Thanks...\", \"tone\": \"empathetic\"}}
+""",
+        expects_json=True,
+        required_keys=["reply", "tone"],
+        output_key="replier",
+        temperature=0.1,
+    )
 
-    agents = []
-    models = get_available_models() or []
-    missing_models_warning = False
-    if not models:
-        default_model = CONFIG.get("default_model", DEFAULT_CONFIG["default_model"])
-        print(
-            f"[Sutra] Ollama did not return any models. "
-            f"Install at least the configured default model (`ollama pull {default_model}`), "
-            f"then rerun creation. Falling back to '{default_model}' for now."
-        )
-        models = [default_model]
-        missing_models_warning = True
+    summary_agent = Agent(
+        name="summarizer",
+        objective="Summarize the ticket, classification, and reply for reporting.",
+        model=DEFAULT_MODEL,
+        prompt=f"""
+{MODEL_HINT}
+Ticket: {{text}}
+Classification: {{classification}}
+Reply: {{replier}}
 
-    for i in range(num):
-        print(f"\n=== Agent {i+1} ===")
+Return JSON with \"summary\", \"next_steps\", and \"status\" keys.
+""",
+        expects_json=True,
+        required_keys=["summary", "next_steps", "status"],
+        output_key="summary",
+        temperature=0.0,
+    )
 
-        while True:
-            name = input("Name: ").strip().lower().replace(" ", "_")
-            if name and name.isidentifier():
-                break
-            print("Invalid name")
+    __all__ = [
+        "classification_agent",
+        "replier_agent",
+        "summary_agent",
+        "DEFAULT_MODEL",
+        "MODEL_HINT",
+    ]
+    """
 
-        purpose = input("Purpose: ").strip() or f"Process {name}"
+def _render_pipeline_template(project_name: str) -> str:
+    return textwrap.dedent(f"""
+    # Auto-generated Sutra pipeline for project '{project_name}'.
+    # Use `sutra run pipeline.py --text '<your text>'` or `python pipeline.py`.
 
-        print("Models: " + ", ".join(f"{j+1}={m}" for j, m in enumerate(models)))
-        while True:
-            try:
-                choice = input(f"Model (1-{len(models)}) [1]: ").strip() or "1"
-                idx = int(choice) - 1
-                if 0 <= idx < len(models):
-                    model = models[idx]
-                    break
-            except:  # pragma: no cover - interactive helper
-                pass
+    from __future__ import annotations
 
-        agents.append({"name": name, "purpose": purpose, "model": model})
+    import json
 
-    print("\n=== Summary ===")
-    for i, a in enumerate(agents, 1):
-        print(f"{i}. {a['name']} ({a['model']}): {a['purpose']}")
-    if missing_models_warning:
-        default_model = CONFIG.get("default_model", DEFAULT_CONFIG["default_model"])
-        print(
-            "\n[Sutra] No Ollama models were listed, so Sutra used the default "
-            f"model '{default_model}'. Configure a model under `.sutra/config.json` "
-            f"and install it (e.g., `ollama pull {default_model}`) before running more pipelines."
-        )
+    from sutra import Pipeline, Step
 
-    if input("\nCreate? [Y/n]: ").lower() in ("", "y"):
-        return agents
-    return []
+    import agents
 
-def generate_dynamic_pipeline(project_name: str, description: str, agent_names: list) -> str:
-    """Generate pipeline file"""
-    agents_str = ", ".join([f'"{project_name}_{n}"' for n in agent_names])
-    
-    return f"""# {project_name}_pipeline.py
-# {description}
+    DEFAULT_INPUT = {{
+        "id": "ticket-1001",
+        "type": "support_ticket",
+        "text": "Customer reports their dashboard throws a 403 after login; needs help urgently.",
+        "fields": {{"channel": "email", "customer": "Acme Corp", "priority_hint": "high"}},
+        "attachments": [],
+        "meta": {{"source": "sutra create"}},
+    }}
 
-from sutra import Step, Pipeline
-import importlib
 
-AGENT_ORDER = [{agents_str}]
+    def build() -> Pipeline:
+        steps = [
+            Step(agents.classification_agent, takes=["text"]),
+            Step(agents.replier_agent, takes=["text", "classification"]),
+            Step(agents.summary_agent, takes=["text", "classification", "replier"]),
+        ]
+        return Pipeline(steps)
 
-def build():
-    steps = []
-    prev = ['text']
-    
-    for agent_file in AGENT_ORDER:
-        mod = importlib.import_module(agent_file)
-        agent_name = agent_file.split('_')[-1]
-        agent = getattr(mod, agent_name)
-        steps.append(Step(agent, takes=prev.copy()))
-        prev.append(agent_name)
-    
-    return Pipeline(steps)
 
-DEFAULT_INPUT = {{'text': 'test input'}}
-"""
+    if __name__ == "__main__":
+        pipeline = build()
+        result = pipeline.run(DEFAULT_INPUT)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    """
+
+def _create_sample_project(project_dir: Path, project_name: str) -> None:
+    default_model = CONFIG.get("default_model", DEFAULT_CONFIG["default_model"])
+    (project_dir / "agents.py").write_text(_render_agents_template(default_model), encoding="utf-8")
+    (project_dir / "pipeline.py").write_text(_render_pipeline_template(project_name), encoding="utf-8")
 
 def cmd_create(project_name, description):
     """Create new project"""
@@ -415,30 +413,17 @@ def cmd_create(project_name, description):
     if project_dir.exists():
         if input(f"{project_dir} exists. Overwrite? [y/N]: ").lower() != 'y':
             return
-    
+
     project_dir.mkdir(parents=True, exist_ok=True)
-    
+
     print(f"\nProject: {project_name}")
     print(f"Location: {project_dir}")
-    
-    agents = interactive_agent_config(project_name)
-    if not agents: 
-        print("Cancelled")
-        return
-    
-    print(f"\nGenerating files...")
-    
-    for a in agents:
-        f = project_dir / f"{project_name}_{a['name']}.py"
-        f.write_text(create_generic_agent(project_name, a['name'], a['purpose'], a['model']), encoding="utf-8")
-        print(f"  {f.name}")
-    
-    names = [a['name'] for a in agents]
-    pipeline = project_dir / f"{project_name}_pipeline.py"
-    pipeline.write_text(generate_dynamic_pipeline(project_name, description, names), encoding="utf-8")
-    print(f"  {pipeline.name}")
-    
-    print(f"\nTest: sutra test {pipeline}")
+    print("\nGenerating runnable pipeline files...")
+
+    _create_sample_project(project_dir, project_name)
+
+    print("\nDone.")
+    print(f"Run the pipeline via: python sutra.py run {project_dir / 'pipeline.py'} --text \"Support ticket text here\"")
 
 # ---------- CLI ----------
 def _import_module(path_str)->types.ModuleType:
