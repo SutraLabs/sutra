@@ -1,6 +1,19 @@
+CHANGELOG.md
 LICENSE
+MANIFEST.in
 README.md
 pyproject.toml
+docs/comparisons.md
+docs/concept.md
+docs/examples.md
+examples/hello_world/README.md
+examples/hello_world/agents.py
+examples/hello_world/pipeline.py
+examples/support_triage/README.md
+examples/support_triage/agents.py
+examples/support_triage/pipeline.py
+examples/support_triage/sample_input.json
+scripts/sutra_legacy.py
 src/sutra/__init__.py
 src/sutra/cli.py
 src/sutra/config.py
@@ -22,6 +35,7 @@ src/sutra_ai.egg-info/dependency_links.txt
 src/sutra_ai.egg-info/entry_points.txt
 src/sutra_ai.egg-info/requires.txt
 src/sutra_ai.egg-info/top_level.txt
+tests/test_cli_flow.py
 tests/test_input_coercion.py
 tests/test_jsonl_batch.py
 tests/test_pdf_tool.py

@@ -2,16 +2,18 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any, Dict
 
-APP_DIR = Path(".sutra")
+APP_DIR = Path(os.environ.get("SUTRA_APP_DIR") or ".sutra")
 CONFIG_PATH = APP_DIR / "config.json"
 DEFAULT_CONFIG: Dict[str, Any] = {
     "ollama_host": "http://localhost:11434",
     "default_model": "llama3.1:latest",
     "runs_dir": ".sutra/runs",
     "outputs_dir": ".sutra/outputs",
+    "projects_dir": "projects",
     "request_timeout": 120,
     "ui_host": "127.0.0.1",
     "ui_port": 8000,

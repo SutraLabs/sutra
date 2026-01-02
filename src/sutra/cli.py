@@ -28,6 +28,8 @@ def main() -> None:
     c = sub.add_parser("create")
     c.add_argument("project_name")
     c.add_argument("description")
+    c.add_argument("--yes", action="store_true", help="Skip confirmation prompts when a project already exists.")
+    c.add_argument("--force", action="store_true", help="Overwrite projects without prompting if they already exist.")
 
     r = sub.add_parser(
         "run",
@@ -56,7 +58,7 @@ def main() -> None:
 
     args = ap.parse_args(argv)
     if args.cmd == "create":
-        cmd_create(args.project_name, args.description)
+        cmd_create(args.project_name, args.description, yes=args.yes, force=args.force)
     elif args.cmd == "run":
         text_arg = args.text if args.text is not None else args.text_payload
         cmd_run(

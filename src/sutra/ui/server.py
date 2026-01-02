@@ -19,6 +19,8 @@ WORKSPACE = Path.cwd()
 CONFIG = load_config()
 RUNS_DIR = resolve_path(CONFIG.get("runs_dir"), APP_DIR / "runs")
 RUNS_DIR.mkdir(parents=True, exist_ok=True)
+PROJECTS_DIR = resolve_path(CONFIG.get("projects_dir"), Path("projects"))
+PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
 TEMPLATES = Jinja2Templates(directory=str(PACKAGE_DIR / "templates"))
 
 app = FastAPI(title="Sutra UI", version="0.1")
@@ -39,10 +41,13 @@ def _load_default_for(path: Path):
 
 def _discover_pipelines():
     candidates = []
-    for base in (WORKSPACE / "projects", WORKSPACE / "examples"):
+    for base in (PROJECTS_DIR, WORKSPACE / "examples"):
         if base.exists():
             for f in sorted(base.rglob("*_pipeline.py")):
-                rel = str(f.relative_to(WORKSPACE))
+                try:
+                    rel = str(f.relative_to(WORKSPACE))
+                except ValueError:
+                    continue
                 candidates.append(
                     {
                         "path": rel,

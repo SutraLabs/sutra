@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import shutil
 import time
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, TypedDict
 try:
@@ -210,7 +210,7 @@ def index_folder(
         "sutra_version": SUTRA_VERSION,
         "embed_model": embed_model,
         "dims": full_embeddings.shape[1],
-        "created_at": datetime.utcnow().isoformat() + "Z",
+        "created_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         "num_docs": doc_id,
         "num_chunks": len(chunk_records),
         "chunk_size": chunk_size,

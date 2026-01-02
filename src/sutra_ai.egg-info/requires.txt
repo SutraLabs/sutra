@@ -1,5 +1,8 @@
 requests>=2.31.0
 
+[dev]
+pytest>=7.0
+
 [pdf]
 pypdf>=4.0.0
 
