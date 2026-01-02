@@ -1,0 +1,21 @@
+{
+  "text": "Ticket #12847: App crashes on photo upload after update 2.3.1",
+  "analyzer": [
+    {
+      "summary": "Ticket #12847: App crashes on photo upload after update 2.3.1",
+      "category": "Bug Report",
+      "root_cause": "Crash on photo upload"
+    }
+  ],
+  "classifier": [
+    {
+      "priority": "High",
+      "team": "mobile",
+      "ticket_type": "bug"
+    }
+  ],
+  "replier": {
+    "reply": "Thanks for the report. We've identified the issue and our mobile team is on it.",
+    "tone": "calm"
+  }
+}

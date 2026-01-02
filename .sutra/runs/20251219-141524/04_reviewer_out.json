@@ -1,0 +1,26 @@
+{
+  "text": "Customer: Jane Doe, VIP bettor, deposits £5k/mo",
+  "informer": [
+    {
+      "full_name": "Jane Doe",
+      "residence": "",
+      "citizenships": [],
+      "monthly_deposits_gbp": "5000",
+      "risk_flags": []
+    }
+  ],
+  "reviewer": [
+    {
+      "verdict": "manual_review",
+      "summary": "The customer's residence and citizenship information is missing, which is critical for identity verification and compliance with UKGC rules. The high monthly deposit of £5000 without source of funds information raises a money laundering risk that requires further verification.",
+      "breach_rules": [
+        "UKGC Rule 4: Identity verification must be completed for all customers"
+      ],
+      "recommended_actions": [
+        "Request proof of residence (e.g., utility bill, bank statement)",
+        "Request proof of citizenship (e.g., passport, national identity card)",
+        "Request source of funds documentation for monthly deposits of £5000"
+      ]
+    }
+  ]
+}

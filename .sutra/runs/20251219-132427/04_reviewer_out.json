@@ -1,0 +1,11 @@
+{
+  "text": "Customer: Jane Doe, VIP bettor, deposits £5k/mo, ...",
+  "informer": {
+    "error": "exception",
+    "message": "[informer] Missing var: '\\n  \"full_name\"'"
+  },
+  "reviewer": {
+    "error": "exception",
+    "message": "[reviewer] Missing var: '\\n  \"verdict\"'"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "text": "Customer: Jane Doe, ...",
+  "informer": {
+    "error": "invalid_json",
+    "raw": ""
+  },
+  "reviewer": {
+    "error": "invalid_json",
+    "raw": ""
+  }
+}
