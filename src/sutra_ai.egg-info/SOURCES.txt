@@ -20,6 +20,7 @@ src/sutra/config.py
 src/sutra/core.py
 src/sutra/input.py
 src/sutra/normalizer.py
+src/sutra/safe_template.py
 src/sutra/version.py
 src/sutra/tools/__init__.py
 src/sutra/tools/executor.py
@@ -41,4 +42,6 @@ tests/test_jsonl_batch.py
 tests/test_pdf_tool.py
 tests/test_rag_tools.py
 tests/test_reliable_normalizer.py
+tests/test_safe_template.py
+tests/test_scaffold_smoke.py
 tests/test_smoke.py
