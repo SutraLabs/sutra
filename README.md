@@ -29,6 +29,12 @@ python projects/demo/pipeline.py --text "My internet is down"
 
 After `sutra create` you will see guidance such as "What happens next?" and reminders like `ollama pull <model>` if the model is missing.
 
+For formal docs and release notes, visit the GitHub repo or PyPI page:
+```bash
+echo https://github.com/SutraLabs/sutra
+echo https://pypi.org/project/sutra-ai/
+```
+
 ## Example output
 The demo pipeline writes an `answer` entry:
 ```json
@@ -45,6 +51,7 @@ The demo pipeline writes an `answer` entry:
 ## Commands (kid-friendly)
 - `sutra create <name> <description>`: menu lets you pick Hello World, support triage, or the input wizard.
 - `sutra run <pipeline.py> --text "Hey!"` (or `sutra run <pipeline.py> "Hey!"`): feeds text to the first agent.
+- `sutra --version`: prints the installed `sutra-ai` version.
 - `sutra doctor [--selftest]`: checks Ollama connectivity; `--selftest` also tries to import and run a generated pipeline.
 - `sutra help`: shows the CLI usage and the names of supported commands.
 
@@ -60,7 +67,7 @@ The demo pipeline writes an `answer` entry:
 - Is not: a hosted API service.
 
 ## Links
-- GitHub: https://github.com/rajat4493/SutraFramework
+- GitHub: https://github.com/SutraLabs/sutra
 - Issues: https://github.com/rajat4493/SutraFramework/issues
 - Changelog: https://github.com/rajat4493/SutraFramework/blob/main/CHANGELOG.md
 - PyPI: https://pypi.org/project/sutra-ai/0.1.0/
