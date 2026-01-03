@@ -14,6 +14,25 @@ from .core import (
 )
 
 
+def _prompt_create_menu() -> tuple[str | None, bool]:
+    print("\nChoose how to start:")
+    print("  [1] Hello World (Q&A)  (default)")
+    print("  [2] Support Triage")
+    print("  [3] Interactive Wizard (advanced)")
+    try:
+        choice = input("Selection [1]: ").strip()
+    except EOFError:
+        choice = ""
+    if choice in ("", "1"):
+        return "hello_world", False
+    if choice == "2":
+        return "support_triage", False
+    if choice == "3":
+        return None, True
+    print("Unknown selection, using the Hello World scaffold.")
+    return "hello_world", False
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(prog="sutra")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -28,6 +47,12 @@ def main() -> None:
     c = sub.add_parser("create")
     c.add_argument("project_name")
     c.add_argument("description")
+    c.add_argument("--interactive", action="store_true", help="Start the interactive project wizard.")
+    c.add_argument(
+        "--template",
+        choices=["hello_world", "support_triage"],
+        help="Choose a deterministic scaffold (default shows the chooser menu).",
+    )
     c.add_argument("--yes", action="store_true", help="Skip confirmation prompts when a project already exists.")
     c.add_argument("--force", action="store_true", help="Overwrite projects without prompting if they already exist.")
 
@@ -47,6 +72,7 @@ def main() -> None:
     t.add_argument("pipeline_file")
 
     d = sub.add_parser("doctor")
+    d.add_argument("--selftest", action="store_true", help="Verify scaffolding can import a generated pipeline.")
 
     tpl = sub.add_parser("template")
     tpl.add_argument("pipeline_file")
@@ -58,7 +84,22 @@ def main() -> None:
 
     args = ap.parse_args(argv)
     if args.cmd == "create":
-        cmd_create(args.project_name, args.description, yes=args.yes, force=args.force)
+        template_choice = args.template
+        interactive = args.interactive
+        if args.yes:
+            template_choice = "hello_world"
+            interactive = False
+        elif not interactive and not template_choice:
+            template_choice, interactive = _prompt_create_menu()
+
+        cmd_create(
+            args.project_name,
+            args.description,
+            template=template_choice,
+            interactive=interactive,
+            yes=args.yes,
+            force=args.force,
+        )
     elif args.cmd == "run":
         text_arg = args.text if args.text is not None else args.text_payload
         cmd_run(
@@ -71,7 +112,7 @@ def main() -> None:
     elif args.cmd == "test":
         cmd_test(args.pipeline_file)
     elif args.cmd == "doctor":
-        cmd_doctor()
+        cmd_doctor(args.selftest)
     elif args.cmd == "template":
         cmd_template(args.pipeline_file)
     elif args.cmd == "ui":

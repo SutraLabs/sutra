@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "sutra-ai"
 version = "0.1.2"
-description = "Local-first execution runtime for deterministic LLM workflows with Ollama."
+description = "CLI-first executor for small sequential Ollama agent pipelines."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"

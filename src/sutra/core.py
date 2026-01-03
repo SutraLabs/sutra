@@ -1,16 +1,108 @@
 from __future__ import annotations
 
 # sutra core — Local-first agent workflows
-import importlib.util, json, os, pathlib, shutil, sys, time, types, urllib.request, urllib.error, subprocess, textwrap
+import importlib.util, json, os, pathlib, shutil, sys, tempfile, time, types, urllib.request, urllib.error, subprocess, textwrap
 from pathlib import Path
 from typing import Any, Iterable, List, Optional, Tuple
 
 from .config import APP_DIR, CONFIG_PATH, DEFAULT_CONFIG, load_config, resolve_path
 from .input import WorkItem, coerce_work_item, load_work_items
+from .safe_template import find_unsafe_placeholders, render_template
 
 CONFIG = load_config()
 
 _MODEL_CACHE = {"host": None, "models": [], "ts": 0.0}
+
+MODEL_HINT_TEMPLATE = (
+    "Sutra uses the model '{{model}}'. "
+    "Install it with `ollama pull {{model}}` if it is missing."
+)
+
+INTERACTIVE_PROMPT_TEMPLATE = (
+    "{{model_hint}}\n"
+    "Task: {{purpose}}\n"
+    "Input: {{text}}\n\n"
+    "Return JSON with \"result\".\n"
+    "Example: {{\"result\": \"...\"}}\n"
+)
+
+HELLO_WORLD_PROMPT_BODY = textwrap.dedent(
+    """
+    Question: {{text}}
+
+    Return JSON with "answer".
+    Example: {{"answer": "Thanks for the question."}}
+    """
+)
+
+SUPPORT_TRIAGE_CLASSIFICATION_PROMPT_BODY = textwrap.dedent(
+    """
+    Ticket text: {{text}}
+
+    Return a JSON object with keys "category" and "urgency" (high/medium/low).
+    Example: {{"category": "bug", "urgency": "high"}}
+    """
+)
+
+SUPPORT_TRIAGE_REPLIER_PROMPT_BODY = textwrap.dedent(
+    """
+    Ticket: {{text}}
+    Classification: {{classification}}
+
+    Return JSON with "reply" (friendly response) and "tone" (e.g., calm/empathetic).
+    Example: {{"reply": "Thanks...", "tone": "empathetic"}}
+    """
+)
+
+SUPPORT_TRIAGE_SUMMARY_PROMPT_BODY = textwrap.dedent(
+    """
+    Ticket: {{text}}
+    Classification: {{classification}}
+    Reply: {{replier}}
+
+    Return JSON with "summary", "next_steps", and "status" keys.
+    """
+)
+
+
+_COLOR_ENABLED = False
+
+
+def _init_color() -> None:
+    global _COLOR_ENABLED
+    if not sys.stdout.isatty():
+        return
+    if os.name == "nt":
+        try:
+            import ctypes
+
+            kernel32 = ctypes.windll.kernel32
+            handle = kernel32.GetStdHandle(-11)
+            mode = ctypes.c_uint32()
+            if kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
+                kernel32.SetConsoleMode(handle, mode.value | 0x0004)
+                _COLOR_ENABLED = True
+        except Exception:
+            _COLOR_ENABLED = False
+    else:
+        _COLOR_ENABLED = True
+
+
+def _color_text(text: str, code: str) -> str:
+    if not _COLOR_ENABLED:
+        return text
+    return f"\033[{code}m{text}\033[0m"
+
+
+def _heading(text: str) -> str:
+    return _color_text(text, "36")
+
+
+def _warning(text: str) -> str:
+    return _color_text(text, "33")
+
+
+_init_color()
 
 def get_available_models(host=None, timeout=2, force=False):
     """Return a list of model names from a local Ollama instance, cached briefly."""
@@ -78,12 +170,16 @@ def create_run_root() -> Tuple[Path, str]:
 
 def _mock_ollama_response(prompt: str, json_mode: bool) -> str:
     prompt = prompt or ""
-    if 'Return a JSON object with keys "category"' in prompt:
+    if 'Return JSON with "answer"' in prompt:
+        payload = {"answer": "ok"}
+    elif 'Return a JSON object with keys "category"' in prompt:
         payload = {"category": "bug", "urgency": "high"}
     elif 'Return JSON with "reply"' in prompt:
         payload = {"reply": "Thanks for the ticket.", "tone": "calm"}
     elif 'Return JSON with "summary"' in prompt:
         payload = {"summary": "Ticket triaged", "next_steps": "Monitor", "status": "done"}
+    elif 'Return JSON with "result"' in prompt:
+        payload = {"result": "ok"}
     else:
         payload = {"text": "ok"}
     return json.dumps(payload) if json_mode else json.dumps(payload)
@@ -318,80 +414,162 @@ def _run_pipeline_with_work_item(
         state = normalizer_step(state)
     return pipe.run(state, trace=trace)
 
-def _render_agents_template(default_model: str) -> str:
-    return f"""from __future__ import annotations
+def _choose_base_model(preferred: str | None = None) -> Tuple[str, bool]:
+    preferred_model = preferred or CONFIG.get("default_model", DEFAULT_CONFIG["default_model"])
+    models = get_available_models()
+    if models:
+        if preferred_model in models:
+            return preferred_model, False
+        return models[0], False
+    return "llama3.1:latest", True
 
-from sutra import Agent
 
-DEFAULT_MODEL = "{default_model}"
-MODEL_HINT = (
-    "Sutra expects the local Ollama model '{default_model}'. "
-    "Install it with `ollama pull {default_model}` if it is missing."
-)
+def _hello_world_agents_source(model: str) -> str:
+    model_hint = render_template(MODEL_HINT_TEMPLATE, {"model": model})
+    prompt_body = render_template(HELLO_WORLD_PROMPT_BODY, {"text": "{text}"})
+    prompt = model_hint + prompt_body
+    lines = [
+        "from __future__ import annotations",
+        "",
+        "from sutra import Agent",
+        "",
+        f'DEFAULT_MODEL = "{model}"',
+        f"MODEL_HINT = {json.dumps(model_hint)}",
+        "",
+        "answer_agent = Agent(",
+        '    name="answer",',
+        '    objective="Provide a short, friendly answer.",',
+        "    model=DEFAULT_MODEL,",
+        f'    prompt="""{prompt}""",',
+        "    expects_json=True,",
+        '    required_keys=["answer"],',
+        '    output_key="answer",',
+        "    temperature=0.1,",
+        ")",
+        "",
+        "__all__ = [",
+        '    "answer_agent",',
+        '    "DEFAULT_MODEL",',
+        '    "MODEL_HINT",',
+        "]",
+        "",
+    ]
+    return "\n".join(lines)
 
-classification_agent = Agent(
-    name="classification",
-    objective="Classify support tickets by category and urgency.",
-    model=DEFAULT_MODEL,
-    prompt=MODEL_HINT + '''
-Ticket text: {{text}}
 
-Return a JSON object with keys "category" and "urgency" (high/medium/low).
-Example: {{{{\"category\": \"bug\", \"urgency\": \"high\"}}}}
-''',
-    expects_json=True,
-    required_keys=["category", "urgency"],
-    output_key="classification",
-    retries=2,
-    temperature=0.1,
-)
+def _clean_description(description: str) -> str:
+    return " ".join(description.strip().split())
 
-replier_agent = Agent(
-    name="replier",
-    objective="Draft a friendly support reply referencing classification insights.",
-    model=DEFAULT_MODEL,
-    prompt=MODEL_HINT + '''
-Ticket: {{text}}
-Classification: {{classification}}
 
-Return JSON with "reply" (friendly response) and "tone" (e.g., calm/empathetic).
-Example: {{{{\"reply\": \"Thanks...\", \"tone\": \"empathetic\"}}}}
-''',
-    expects_json=True,
-    required_keys=["reply", "tone"],
-    output_key="replier",
-    temperature=0.1,
-)
+def _hello_world_pipeline_source(project_name: str, description: str) -> str:
+    desc = _clean_description(description)
+    return f"""# Auto-generated Sutra pipeline for project '{project_name}'.
+# Description: {desc}
 
-summary_agent = Agent(
-    name="summarizer",
-    objective="Summarize the ticket, classification, and reply for reporting.",
-    model=DEFAULT_MODEL,
-    prompt=MODEL_HINT + '''
-Ticket: {{text}}
-Classification: {{classification}}
-Reply: {{replier}}
+from __future__ import annotations
 
-Return JSON with "summary", "next_steps", and "status" keys.
-''',
-    expects_json=True,
-    required_keys=["summary", "next_steps", "status"],
-    output_key="summary",
-    temperature=0.0,
-)
+import json
 
-__all__ = [
-    "classification_agent",
-    "replier_agent",
-    "summary_agent",
-    "DEFAULT_MODEL",
-    "MODEL_HINT",
-]
+from sutra import Pipeline, Step
+
+import agents
+
+DEFAULT_INPUT = {{
+    "id": "hello-001",
+    "type": "example",
+    "text": "What is my question again?",
+    "fields": {{}},
+    "attachments": [],
+    "meta": {{"source": "sutra create"}},
+}}
+
+
+def build() -> Pipeline:
+    steps = [
+        Step(agents.answer_agent, takes=["text"]),
+    ]
+    return Pipeline(steps)
+
+
+if __name__ == "__main__":
+    pipeline = build()
+    result = pipeline.run(DEFAULT_INPUT)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
 """
 
-def _render_pipeline_template(project_name: str) -> str:
+
+def _support_triage_agents_source(default_model: str) -> str:
+    model_hint = render_template(MODEL_HINT_TEMPLATE, {"model": default_model})
+    classification_body = render_template(SUPPORT_TRIAGE_CLASSIFICATION_PROMPT_BODY, {"text": "{text}"})
+    replier_body = render_template(
+        SUPPORT_TRIAGE_REPLIER_PROMPT_BODY,
+        {"text": "{text}", "classification": "{classification}"},
+    )
+    summary_body = render_template(
+        SUPPORT_TRIAGE_SUMMARY_PROMPT_BODY,
+        {"text": "{text}", "classification": "{classification}", "replier": "{replier}"},
+    )
+    classification_prompt = model_hint + classification_body
+    replier_prompt = model_hint + replier_body
+    summary_prompt = model_hint + summary_body
+    lines = [
+        "from __future__ import annotations",
+        "",
+        "from sutra import Agent",
+        "",
+        f'DEFAULT_MODEL = "{default_model}"',
+        f"MODEL_HINT = {json.dumps(model_hint)}",
+        "",
+        "classification_agent = Agent(",
+        '    name="classification",',
+        '    objective="Classify support tickets by category and urgency.",',
+        "    model=DEFAULT_MODEL,",
+        f'    prompt="""{classification_prompt}""",',
+        "    expects_json=True,",
+        '    required_keys=["category", "urgency"],',
+        '    output_key="classification",',
+        "    retries=2,",
+        "    temperature=0.1,",
+        ")",
+        "",
+        "replier_agent = Agent(",
+        '    name="replier",',
+        '    objective="Draft a friendly support reply referencing classification insights.",',
+        "    model=DEFAULT_MODEL,",
+        f'    prompt="""{replier_prompt}""",',
+        "    expects_json=True,",
+        '    required_keys=["reply", "tone"],',
+        '    output_key="replier",',
+        "    temperature=0.1,",
+        ")",
+        "",
+        "summary_agent = Agent(",
+        '    name="summarizer",',
+        '    objective="Summarize the ticket, classification, and reply for reporting.",',
+        "    model=DEFAULT_MODEL,",
+        f'    prompt="""{summary_prompt}""",',
+        "    expects_json=True,",
+        '    required_keys=["summary", "next_steps", "status"],',
+        '    output_key="summary",',
+        "    temperature=0.0,",
+        ")",
+        "",
+        "__all__ = [",
+        '    "classification_agent",',
+        '    "replier_agent",',
+        '    "summary_agent",',
+        '    "DEFAULT_MODEL",',
+        '    "MODEL_HINT",',
+        "]",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def _support_triage_pipeline_source(project_name: str, description: str) -> str:
+    desc = _clean_description(description)
     return f"""# Auto-generated Sutra pipeline for project '{project_name}'.
-# Use `sutra run pipeline.py --text '<your text>'` or `python pipeline.py`.
+# Description: {desc}
 
 from __future__ import annotations
 
@@ -426,14 +604,196 @@ if __name__ == "__main__":
     print(json.dumps(result, ensure_ascii=False, indent=2))
 """
 
-def _create_sample_project(project_dir: Path, project_name: str) -> None:
-    default_model = CONFIG.get("default_model", DEFAULT_CONFIG["default_model"])
-    (project_dir / "agents.py").write_text(_render_agents_template(default_model), encoding="utf-8")
-    (project_dir / "pipeline.py").write_text(_render_pipeline_template(project_name), encoding="utf-8")
 
-def cmd_create(project_name, description, *, yes: bool = False, force: bool = False):
+def _write_support_triage_project(project_dir: Path, project_name: str, default_model: str, description: str) -> None:
+    (project_dir / "agents.py").write_text(_support_triage_agents_source(default_model), encoding="utf-8")
+    (project_dir / "pipeline.py").write_text(_support_triage_pipeline_source(project_name, description), encoding="utf-8")
+
+
+def _write_hello_world_project(project_dir: Path, project_name: str, description: str, model: str) -> None:
+    (project_dir / "agents.py").write_text(_hello_world_agents_source(model), encoding="utf-8")
+    (project_dir / "pipeline.py").write_text(
+        _hello_world_pipeline_source(project_name, description), encoding="utf-8"
+    )
+
+
+def _sanitized_name(value: str, default: str) -> str:
+    safe = "".join(ch if ch.isalnum() else "_" for ch in value.strip().lower())
+    return safe or default
+
+
+def _prompt_int(prompt: str, default: int, min_val: int, max_val: int) -> int:
+    while True:
+        try:
+            raw = input(prompt).strip()
+        except EOFError:
+            return default
+        if not raw:
+            return default
+        try:
+            n = int(raw)
+        except ValueError:
+            print("Please enter a number.")
+            continue
+        if min_val <= n <= max_val:
+            return n
+        print(f"Enter a number between {min_val} and {max_val}.")
+
+
+def _prompt_text(prompt: str, default: str) -> str:
+    try:
+        raw = input(prompt).strip()
+    except EOFError:
+        return default
+    return raw or default
+
+
+def _prompt_model_choice(name: str, available: list[str], default: str) -> str:
+    if available:
+        print("Available models:")
+        for idx, model_name in enumerate(available[:6], start=1):
+            print(f"  {idx}. {model_name}")
+    prompt = f"Model for {name} (default {default}): "
+    choice = _prompt_text(prompt, default)
+    if available and choice.isdigit():
+        idx = int(choice) - 1
+        if 0 <= idx < len(available):
+            return available[idx]
+    return choice
+
+
+def _collect_interactive_agents(
+    default_model: str, available_models: list[str], *, auto_confirm: bool = False
+) -> list[dict[str, str]]:
+    print("\nInteractive project wizard")
+    count = _prompt_int("How many agents will run? (1-5) [1]: ", default=1, min_val=1, max_val=5)
+    agents: list[dict[str, str]] = []
+    for i in range(1, count + 1):
+        default_name = f"agent{i}"
+        name = _sanitized_name(_prompt_text(f"Name for agent {i} (default {default_name}): ", default_name), default_name)
+        purpose = _prompt_text(f"What is {name}'s job? ", f"Respond to the user's request.")
+        model = _prompt_model_choice(name, available_models, default_model)
+        agents.append({"name": name, "purpose": purpose, "model": model, "output_key": name})
+    print("\nSummary:")
+    for idx, info in enumerate(agents, start=1):
+        print(f"  {idx}. {info['name']} ({info['model']}) — {info['purpose']}")
+    if not auto_confirm:
+        confirm = _prompt_text("Create this project? [Y/n]: ", "y").strip().lower()
+        if confirm.startswith("n"):
+            print("Creation cancelled.")
+            return []
+    return agents
+
+
+def _render_interactive_agents(agents_info: list[dict[str, str]]) -> str:
+    lines = ["from __future__ import annotations", "", "from sutra import Agent", "", ""]
+    for info in agents_info:
+        model = info["model"]
+        model_hint = render_template(MODEL_HINT_TEMPLATE, {"model": model})
+        prompt = render_template(
+            INTERACTIVE_PROMPT_TEMPLATE,
+            {"model_hint": model_hint, "purpose": info["purpose"], "text": "{text}"},
+        )
+        lines.append(f"{info['name']}_agent = Agent(")
+        lines.append(f"    name=\"{info['name']}\",")
+        lines.append(f"    objective=\"{info['purpose']}\",")
+        lines.append(f"    model=\"{model}\",")
+        lines.append("    prompt=\"\"\"" + prompt + "\"\"\",")
+        lines.append("    expects_json=True,")
+        lines.append("    required_keys=[\"result\"],")
+        lines.append(f"    output_key=\"{info['output_key']}\",")
+        lines.append("    temperature=0.2,")
+        lines.append(")")
+        lines.append("")
+    lines.append("__all__ = [")
+    for info in agents_info:
+        lines.append(f"    \"{info['name']}_agent\",")
+    lines.append("]")
+    return "\n".join(lines)
+
+
+def _render_interactive_pipeline(project_name: str, description: str, agents_info: list[dict[str, str]]) -> str:
+    step_lines = []
+    previous_outputs: list[str] = []
+    for info in agents_info:
+        takes = ["\"text\""] + [f"\"{output}\"" for output in previous_outputs]
+        step_lines.append(f"        Step(agents.{info['name']}_agent, takes=[{', '.join(takes)}]),")
+        previous_outputs.append(info["output_key"])
+    steps_block = "\n".join(step_lines)
+    return f"""# Auto-generated Sutra pipeline for project '{project_name}'.
+# Description: {description}
+
+from __future__ import annotations
+
+import json
+
+from sutra import Pipeline, Step
+
+import agents
+
+DEFAULT_INPUT = {{
+    "id": "wizard-001",
+    "type": "wizard",
+    "text": "Explain how Sutra responds to questions.",
+    "fields": {{}},
+    "attachments": [],
+    "meta": {{"source": "sutra create"}},
+}}
+
+
+def build() -> Pipeline:
+    steps = [
+{steps_block}
+    ]
+    return Pipeline(steps)
+
+
+if __name__ == "__main__":
+    pipeline = build()
+    result = pipeline.run(DEFAULT_INPUT)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+"""
+
+
+def _write_interactive_project(project_dir: Path, project_name: str, description: str, agents_info: list[dict[str, str]]) -> None:
+    (project_dir / "agents.py").write_text(_render_interactive_agents(agents_info), encoding="utf-8")
+    (project_dir / "pipeline.py").write_text(
+        _render_interactive_pipeline(project_name, description, agents_info), encoding="utf-8"
+    )
+
+
+def _project_display_path(project_dir: Path) -> str:
+    try:
+        return str(project_dir.relative_to(Path.cwd()))
+    except ValueError:
+        return str(project_dir)
+
+
+def _print_post_create(project_dir: Path, used_models: list[str]) -> None:
+    display_path = _project_display_path(project_dir / "pipeline.py")
+    print()
+    print(_heading("What happens next?"))
+    print(f"  sutra run {display_path} --text \"Your question here\"")
+    print(f"  python {display_path} --text \"Your question here\"")
+    print()
+    print(_heading("If something fails"))
+    print("  sutra doctor")
+    unique_models = sorted(set(used_models))
+    for model in unique_models:
+        print(f"  ollama pull {model}")
+
+
+def cmd_create(
+    project_name,
+    description,
+    *,
+    template: str | None = None,
+    interactive: bool = False,
+    yes: bool = False,
+    force: bool = False,
+):
     """Create new project"""
-    project_name = project_name.replace('.py', '').replace('.', '_').replace('-', '_')
+    project_name = project_name.replace(".py", "").replace(".", "_").replace("-", "_")
     project_dir = PROJECTS_DIR / project_name
 
     if project_dir.exists():
@@ -445,7 +805,7 @@ def cmd_create(project_name, description, *, yes: bool = False, force: bool = Fa
                 file=sys.stderr,
             )
             sys.exit(2)
-        elif input(f"{project_dir} exists. Overwrite? [y/N]: ").lower() != 'y':
+        elif input(f"{project_dir} exists. Overwrite? [y/N]: ").lower() != "y":
             return
 
     project_dir.mkdir(parents=True, exist_ok=True)
@@ -454,10 +814,32 @@ def cmd_create(project_name, description, *, yes: bool = False, force: bool = Fa
     print(f"Location: {project_dir}")
     print("\nGenerating runnable pipeline files...")
 
-    _create_sample_project(project_dir, project_name)
+    base_model, fallback_model = _choose_base_model()
+    available_models = get_available_models()
+    created_models: list[str] = []
+
+    if interactive:
+        agents_info = _collect_interactive_agents(base_model, available_models, auto_confirm=yes)
+        if not agents_info:
+            print("Interactive creation aborted.")
+            return
+        _write_interactive_project(project_dir, project_name, description, agents_info)
+        created_models = [info["model"] for info in agents_info]
+    else:
+        selected = template or "hello_world"
+        if selected == "support_triage":
+            _write_support_triage_project(project_dir, project_name, base_model, description)
+        else:
+            _write_hello_world_project(project_dir, project_name, description, base_model)
+        created_models = [base_model]
+        if fallback_model:
+            print(
+                "[Sutra] No Ollama models detected; defaulting to 'llama3.1:latest'. "
+                "Install it with `ollama pull llama3.1:latest`."
+            )
 
     print("\nDone.")
-    print(f"Run the pipeline via: python sutra.py run {project_dir / 'pipeline.py'} --text \"Support ticket text here\"")
+    _print_post_create(project_dir, created_models)
 
 # ---------- CLI ----------
 def _import_module(path_str)->types.ModuleType:
@@ -563,7 +945,38 @@ def cmd_test(filename):
     out = _run_pipeline_with_work_item(pipe, work_item, normalizer_step=_resolve_normalizer(mod))
     print(json.dumps(out, indent=2, ensure_ascii=False))
 
-def cmd_doctor():
+def _doctor_selftest() -> None:
+    default_model = CONFIG.get("default_model", DEFAULT_CONFIG["default_model"])
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_dir = Path(tmpdir) / "doctor_selftest"
+            project_dir.mkdir(parents=True, exist_ok=True)
+            _write_hello_world_project(project_dir, "doctor_selftest", "Doctor selftest", default_model)
+            pipeline_path = project_dir / "pipeline.py"
+            original_sys_path = list(sys.path)
+            if str(project_dir) not in sys.path:
+                sys.path.insert(0, str(project_dir))
+            try:
+                mod = _import_module(str(pipeline_path))
+            except Exception as exc:
+                print(f"[Sutra] Doctor selftest failed: {exc}")
+                return
+            finally:
+                sys.path[:] = original_sys_path
+            build_func = getattr(mod, "build", None)
+            if not callable(build_func):
+                print("[Sutra] Doctor selftest failed: pipeline.build() missing.")
+                return
+            pipeline = build_func()
+            if not hasattr(pipeline, "run"):
+                print("[Sutra] Doctor selftest failed: pipeline.run() missing.")
+                return
+            print("[Sutra] Doctor selftest succeeded.")
+    except Exception as exc:
+        print(f"[Sutra] Doctor selftest failed: {exc}")
+
+
+def cmd_doctor(selftest: bool = False):
     models = get_available_models()
     if models:
         print("Ollama OK")
@@ -576,6 +989,9 @@ def cmd_doctor():
         print(f"Test: {r[:60]}")
     except Exception as e:
         print(f"Error: {e}")
+
+    if selftest:
+        _doctor_selftest()
 
 def cmd_template(filename):
     tpl = _load_default_input(filename)
