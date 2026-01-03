@@ -8,32 +8,45 @@ This project is not affiliated with, endorsed by, or associated with any company
 pip install sutra-ai
 ```
 
-## Examples
-### Hello world
+## Quick start
+1. Create a demo project (menu lets you pick Hello World, support triage, or the interactive wizard):
+   ```bash
+   sutra create demo "Support ticket helper" --yes
+   ```
+2. Run the generated pipeline with a short question:
+   ```bash
+   sutra run projects/demo/pipeline.py --text "My internet is down"
+   ```
+3. Verify everything still works by running the doctor self-test:
+   ```bash
+   sutra doctor --selftest
+   ```
+
+You can also open the demo pipeline directly with Python:
 ```bash
-pip install -e .
-sutra run examples/hello_world/pipeline.py --text "Hello example"
+python projects/demo/pipeline.py --text "My internet is down"
 ```
 
-### Support triage
-```bash
-pip install -e .
-sutra run examples/support_triage/pipeline.py --text "Need help with the dashboard"
-sutra run examples/support_triage/pipeline.py --input examples/support_triage/sample_input.json
-```
+After `sutra create` you will see guidance such as "What happens next?" and reminders like `ollama pull <model>` if the model is missing.
 
+## Example output
+The demo pipeline writes an `answer` entry:
 ```json
 {
-  "classification": [{"category": "bug", "urgency": "high"}],
-  "replier": {"reply": "Team notified, working on it.", "tone": "calm"},
-  "summary": {"summary": "Dashboard error blocking invoices", "next_steps": "Network to confirm deployment", "status": "pending"}
+  "answer": [{"answer": "Thanks for the question."}]
 }
 ```
 
-## Commands
-- `sutra create <name> <description>` (writes to `projects/<name>`; `projects/` is a working directory and not tracked in this repo)
-- `sutra run <pipeline.py> [--text TEXT | \"TEXT\"]`
-- `sutra doctor`
+## Concepts
+- **Agent**: one actor (model + prompt) that enforces `expects_json` and `required_keys`.
+- **Step**: runs an agent and feeds its outputs to the next step.
+- **Pipeline**: a list of steps wired together; it always exposes `build()` and `DEFAULT_INPUT`.
+
+## Commands (kid-friendly)
+- `sutra create <name> <description>`: menu lets you pick Hello World, support triage, or the input wizard.
+- `sutra run <pipeline.py> --text "Hey!"` (or `sutra run <pipeline.py> "Hey!"`): feeds text to the first agent.
+- `sutra doctor [--selftest]`: checks Ollama connectivity; `--selftest` also tries to import and run a generated pipeline.
+- `sutra help`: shows the CLI usage and the names of supported commands.
 
 ## Requirements
 - Python >=3.10
