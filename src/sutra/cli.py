@@ -12,6 +12,7 @@ from .core import (
     cmd_template,
     cmd_ui,
 )
+from .version import __version__
 
 
 def _prompt_create_menu() -> tuple[str | None, bool]:
@@ -35,6 +36,7 @@ def _prompt_create_menu() -> tuple[str | None, bool]:
 
 def main() -> None:
     ap = argparse.ArgumentParser(prog="sutra")
+    ap.add_argument("--version", action="version", version=f"sutra {__version__}")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     argv = sys.argv[1:]
