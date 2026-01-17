@@ -94,19 +94,20 @@ The demo pipeline writes an `answer` entry:
 
 LangChain is powerful, but it is heavy for learning.
 
-It introduces many concepts upfront—chains, graphs, tools, memory, callbacks—before you understand how agents behave and interact.
+    It introduces many concepts upfront—chains, graphs, tools, memory, callbacks—before you understand how agents behave and interact.
 
 Sutra takes a different approach:
 
-Aspect	LangChain	Sutra
-Primary goal	Production apps	Learning & experimentation
-Concepts upfront	Many	Few
-Hello world size	Large	Small
-Setup time	Longer	Short
-Cloud-first	Often	Never
+    Aspect      	       |    LangChain	           |             Sutra
+    Primary goal	       |  Production apps	       |     Learning & experimentation
+    Concepts upfront	   |      Many	               |              Few
+    Hello world size	   |      Large	               |             Small
+    Setup time	           |      Longer	           |             Short
+    Cloud-first	           |      Often	               |             Never
 
-If you are learning agentic AI, start with Sutra.
-If you are shipping a production system, use LangChain.
+If you are **learning agentic AI**, start with **Sutra**.
+
+If you are shipping a **production** system, use **LangChain**.
 
 ## About Output Quality
 
