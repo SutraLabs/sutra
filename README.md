@@ -91,6 +91,7 @@ The demo pipeline writes an `answer` entry:
 - Is not: a hosted API service.
 
 ## Links
+- EXAMPLE GIF: https://github.com/SutraLabs/sutra/blob/main/examples/assets/emailprojectcreation.gif
 - GitHub: https://github.com/SutraLabs/sutra
 - Issues: https://github.com/SutraLabs/sutra/issues
 - Changelog: https://github.com/SutraLabs/sutra/blob/main/CHANGELOG.md
