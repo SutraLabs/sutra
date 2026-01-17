@@ -48,7 +48,12 @@ The demo pipeline writes an `answer` entry:
 - **Step**: runs an agent and feeds its outputs to the next step.
 - **Pipeline**: a list of steps wired together; it always exposes `build()` and `DEFAULT_INPUT`.
 
-## Commands (kid-friendly)
+## Recommended Envinroment
+1. Install Ollama before-hand
+2. Download model of your choice
+3. Create a virtual Python environment
+
+## Commands (Quick Start)
 - `sutra create <name> <description>`: menu lets you pick Hello World, support triage, or the input wizard.
 - `sutra run <pipeline.py> --text "Hey!"` (or `sutra run <pipeline.py> "Hey!"`): feeds text to the first agent.
 - `sutra --version`: prints the installed `sutra-ai` version.
