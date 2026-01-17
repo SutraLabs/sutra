@@ -1,0 +1,9 @@
+## Email Rewriter
+
+Paste an email → get rewritten versions.
+
+Run:
+```bash
+sutra run pipeline.py --text "Please send the files by tomorrow."
+
+
