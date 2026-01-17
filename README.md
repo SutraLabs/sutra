@@ -90,6 +90,75 @@ The demo pipeline writes an `answer` entry:
 - Is not: an autonomous planner with self-directed agents.
 - Is not: a hosted API service.
 
+## Why Not Just Use LangChain?
+
+LangChain is powerful, but it is heavy for learning.
+
+It introduces many concepts upfront—chains, graphs, tools, memory, callbacks—before you understand how agents behave and interact.
+
+Sutra takes a different approach:
+
+Aspect	LangChain	Sutra
+Primary goal	Production apps	Learning & experimentation
+Concepts upfront	Many	Few
+Hello world size	Large	Small
+Setup time	Longer	Short
+Cloud-first	Often	Never
+
+If you are learning agentic AI, start with Sutra.
+If you are shipping a production system, use LangChain.
+
+## About Output Quality
+
+1.Sutra runs entirely on local models.
+
+2.The quality of the output depends on:
+
+    The model you use
+    The size of the model
+    The prompts you write
+
+6.If output feels weak, try:
+
+    6.1.A larger local model
+
+    6.2.Adjusting prompts
+
+Breaking tasks into smaller steps
+
+**Sutra does not optimize or hide model behavior.**
+This is intentional, so you can see how agent design affects results.
+
+## Scope and Intent
+
+Sutra is intentionally limited in scope.
+
+It focuses on:
+
+    Understanding agent roles
+    
+    Sequencing agent steps
+    
+    Passing outputs explicitly
+    
+    Learning by reading and modifying code
+
+It does not aim to provide:
+
+    Scaling
+    
+    Deployment
+    
+    Monitoring
+    
+    Tool ecosystems
+    
+    Enterprise features
+
+**Sutra is a learning playground.**
+Its purpose is to help you understand agentic AI clearly, before moving on to larger frameworks.
+
+
 ## Links
 - EXAMPLE GIF: https://github.com/SutraLabs/sutra/blob/main/examples/assets/emailprojectcreation.gif
 - GitHub: https://github.com/SutraLabs/sutra
