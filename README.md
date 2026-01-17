@@ -1,4 +1,4 @@
-##**Sutra**
+## Sutra
 
 Sutra is a small framework for running sequential LLM pipelines locally.
 This project is not affiliated with, endorsed by, or associated with any company or product named Sutra or Sutra AI.
