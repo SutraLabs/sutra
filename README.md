@@ -3,6 +3,24 @@
 Sutra is a small framework for running sequential LLM pipelines locally.
 This project is not affiliated with, endorsed by, or associated with any company or product named Sutra or Sutra AI.
 
+Learn agentic AI on your laptop
+
+Sutra is a local-first agentic AI playground for learning and tinkering — not a production framework.
+
+   ❌ No cloud APIs
+   💸 No costs
+   🧱 No framework bloat
+   🐍 Just Python + Ollama
+   🛠 Build small, actually useful tools
+
+If LangChain feels heavy and AutoGen feels overengineered, Sutra is for you.
+
+
+## DISCLAIMER
+Sutra is not trying to replace LangChain or AutoGen.
+It’s a learning tool and side-agent sandbox for understanding agentic AI without the fuss.
+
+
 ## Install
 ```bash
 pip install sutra-ai
