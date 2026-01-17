@@ -7,12 +7,13 @@ Learn agentic AI on your laptop
 
 Sutra is a local-first agentic AI playground for learning and tinkering — not a production framework.
 
-   ❌ No cloud APIs
-   💸 No costs
-   🧱 No framework bloat
-   🐍 Just Python + Ollama
-   🛠 Build small, actually useful tools
-
+  1. ❌ No cloud APIs
+  2. 💸 No costs
+  3. 🧱 No framework bloat
+  4. 🐍 Just Python + Ollama
+  5. 🛠 Build small, actually useful tools  
+   
+   
 If LangChain feels heavy and AutoGen feels overengineered, Sutra is for you.
 
 
