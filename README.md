@@ -73,6 +73,6 @@ The demo pipeline writes an `answer` entry:
 
 ## Links
 - GitHub: https://github.com/SutraLabs/sutra
-- Issues: https://github.com/rajat4493/SutraFramework/issues
-- Changelog: https://github.com/rajat4493/SutraFramework/blob/main/CHANGELOG.md
+- Issues: https://github.com/SutraLabs/sutra/issues
+- Changelog: https://github.com/SutraLabs/sutra/blob/main/CHANGELOG.md
 - PyPI: https://pypi.org/project/sutra-ai/0.1.0/
